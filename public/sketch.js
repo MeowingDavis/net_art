@@ -7,5 +7,6 @@ function setup () {
 
 function  draw () {
    background (`turquoise`)
-   rect (100, 100 ,100)
+   noStroke();
+   rect (100, 100 ,100);
 }
