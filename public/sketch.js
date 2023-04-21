@@ -7,6 +7,7 @@ function setup() {
   createCanvas(innerWidth, innerHeight);
   colorMode (HSB)
   r = new RecursiveRectangle (0, 0, width, height, rand_colour ())
+  noStroke ();
 }
 
 function draw() {
