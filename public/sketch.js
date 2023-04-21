@@ -37,7 +37,7 @@ class RecursiveRectangle {
     fill (this.c)
     const x_offset = noise (this.n_x + (f / 60), this.n_y) * 12 - 6
     const y_offset = noise (this.n_x, this.n_y + (f / 60)) * 12 - 6
-    ellipse (this.x + x_offset, this.y + y_offset, this.w, this.h)
+    rect (this.x + x_offset, this.y + y_offset, this.w, this.h)
     if (this.has_child) {
       this.child.draw (f)
     }
