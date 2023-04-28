@@ -1,5 +1,43 @@
 document.body.style.margin = 0;
-document.body.style.overflow = `hidden`;
+document.body.style.overflow = 'hidden';
+document.body.bgColor = 'tomato';
+
+const audio_context = new AudioContext();
+audio_context.suspend();
+
+let vibraphone_buffer;
+
+get_vibraphone();
+
+function get_vibraphone() {
+  fetch('vibraphone_note.wav')
+    .then(response => response.arrayBuffer())
+    .then(buffer => audio_context.decodeAudioData(buffer))
+    .then(decoded_buffer => {
+      vibraphone_buffer = decoded_buffer;
+    });
+}
+
+function play_vibraphone(rate) {
+  const buf_node = audio_context.createBufferSource();
+  buf_node.connect(audio_context.destination);
+  buf_node.buffer = vibraphone_buffer;
+  buf_node.playbackRate.value = rate;
+  buf_node.start(audio_context.currentTime);
+}
+
+function click_handler(mouse_event) {
+  if (audio_context.state === 'suspended') {
+    audio_context.resume();
+    document.body.bgColor = 'forestgreen';
+  } else {
+    const x_pos = mouse_event.clientX;
+    const x_ratio = x_pos / window.innerWidth;
+    play_vibraphone(2 ** x_ratio);
+  }
+}
+
+document.onclick = click_handler;
 
 let r, circleColor;
 
@@ -10,13 +48,11 @@ function setup() {
   r = new RecursiveCircle(width/2, height/2, min(width, height), circleColor);
   noStroke();
   
-  // add event listener to window to call resizeCanvas() on window resize
   window.addEventListener('resize', () => {
     resizeCanvas(windowWidth, windowHeight);
     r = new RecursiveCircle(width/2, height/2, min(width, windowHeight), circleColor);
   });
 
-  // add event listener to canvas to randomize color on click
   canvas.addEventListener('click', () => {
     circleColor = rand_colour();
     r.updateColor(circleColor);
@@ -66,4 +102,3 @@ function rand_colour() {
   const h = random(360);
   return color(h, 100, 100);
 }
-
