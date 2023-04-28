@@ -1,13 +1,26 @@
 document.body.style.margin = 0;
 document.body.style.overflow = `hidden`;
 
-let r;
+let r, circleColor;
 
 function setup() {
-  createCanvas(innerWidth, innerHeight);
+  createCanvas(windowWidth, windowHeight);
   colorMode(HSB);
-  r = new RecursiveCircle(width/2, height/2, min(width, height), rand_colour());
+  circleColor = rand_colour();
+  r = new RecursiveCircle(width/2, height/2, min(width, height), circleColor);
   noStroke();
+  
+  // add event listener to window to call resizeCanvas() on window resize
+  window.addEventListener('resize', () => {
+    resizeCanvas(windowWidth, windowHeight);
+    r = new RecursiveCircle(width/2, height/2, min(width, windowHeight), circleColor);
+  });
+
+  // add event listener to canvas to randomize color on click
+  canvas.addEventListener('click', () => {
+    circleColor = rand_colour();
+    r.updateColor(circleColor);
+  });
 }
 
 function draw() {
@@ -40,9 +53,17 @@ class RecursiveCircle {
       this.child.draw(f);
     }
   }
+
+  updateColor(c) {
+    this.c = c;
+    if (this.has_child) {
+      this.child.updateColor(rand_colour());
+    }
+  }
 }
 
 function rand_colour() {
   const h = random(360);
   return color(h, 100, 100);
 }
+
