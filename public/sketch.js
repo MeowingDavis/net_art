@@ -1,43 +1,47 @@
 document.body.style.margin = 0;
-document.body.style.overflow = 'hidden';
-document.body.bgColor = 'tomato';
+document.body.style.overflow = `hidden`;
 
 const audio_context = new AudioContext();
 audio_context.suspend();
 
-let vibraphone_buffer;
+let vibraphone_buffers = [];
+let current_buffer_index = 0;
 
-get_vibraphone();
+get_vibraphone_buffers();
 
-function get_vibraphone() {
-  fetch('vibraphone_note.wav')
+function get_vibraphone_buffers() {
+  const filenames = ['vibraphone_note_1.wav', 'vibraphone_note_2.wav', 'vibraphone_note_3.wav', 'vibraphone_note_4.wav', 'vibraphone_note_5.wav'];
+  Promise.all(filenames.map(fetchAndDecode)).then(buffers => {
+    vibraphone_buffers = buffers;
+  });
+}
+
+function fetchAndDecode(filename) {
+  return fetch(filename)
     .then(response => response.arrayBuffer())
-    .then(buffer => audio_context.decodeAudioData(buffer))
-    .then(decoded_buffer => {
-      vibraphone_buffer = decoded_buffer;
-    });
-}
-
-function play_vibraphone(rate) {
-  const buf_node = audio_context.createBufferSource();
-  buf_node.connect(audio_context.destination);
-  buf_node.buffer = vibraphone_buffer;
-  buf_node.playbackRate.value = rate;
-  buf_node.start(audio_context.currentTime);
-}
-
-function click_handler(mouse_event) {
-  if (audio_context.state === 'suspended') {
-    audio_context.resume();
-    document.body.bgColor = 'forestgreen';
-  } else {
-    const x_pos = mouse_event.clientX;
-    const x_ratio = x_pos / window.innerWidth;
-    play_vibraphone(2 ** x_ratio);
-  }
+    .then(buffer => audio_context.decodeAudioData(buffer));
 }
 
 document.onclick = click_handler;
+
+function click_handler(mouse_event) {
+  if (audio_context.state == 'suspended') {
+    audio_context.resume();
+  } else {
+    const buffer = vibraphone_buffers[current_buffer_index];
+    const playback_rate = (mouse_event.clientX / window.innerWidth) * 2 + 0.5;
+    play_vibraphone(buffer, playback_rate);
+    current_buffer_index = (current_buffer_index + 1) % vibraphone_buffers.length;
+  }
+}
+
+function play_vibraphone(buffer, rate) {
+  const buf_node = audio_context.createBufferSource();
+  buf_node.buffer = buffer;
+  buf_node.playbackRate.value = rate;
+  buf_node.connect(audio_context.destination);
+  buf_node.start();
+}
 
 let r, circleColor;
 
@@ -48,11 +52,13 @@ function setup() {
   r = new RecursiveCircle(width/2, height/2, min(width, height), circleColor);
   noStroke();
   
+  // add event listener to window to call resizeCanvas() on window resize
   window.addEventListener('resize', () => {
     resizeCanvas(windowWidth, windowHeight);
     r = new RecursiveCircle(width/2, height/2, min(width, windowHeight), circleColor);
   });
 
+  // add event listener to canvas to randomize color on click
   canvas.addEventListener('click', () => {
     circleColor = rand_colour();
     r.updateColor(circleColor);
@@ -97,6 +103,7 @@ class RecursiveCircle {
     }
   }
 }
+
 
 function rand_colour() {
   const h = random(360);
