@@ -30,16 +30,19 @@ function click_handler(mouse_event) {
   } else {
     const buffer = vibraphone_buffers[current_buffer_index];
     const playback_rate = (mouse_event.clientX / window.innerWidth) * 2 + 0.5;
-    play_vibraphone(buffer, playback_rate);
+    play_vibraphone(buffer, playback_rate, 0.6);
     current_buffer_index = (current_buffer_index + 1) % vibraphone_buffers.length;
   }
 }
 
 function play_vibraphone(buffer, rate) {
   const buf_node = audio_context.createBufferSource();
+  const gainNode = audio_context.createGain(); // add gain node
   buf_node.buffer = buffer;
   buf_node.playbackRate.value = rate;
-  buf_node.connect(audio_context.destination);
+  buf_node.connect(gainNode); // connect to gain node
+  gainNode.gain.value = 0.1; // set gain value
+  gainNode.connect(audio_context.destination);
   buf_node.start();
 }
 
@@ -96,6 +99,9 @@ class RecursiveCircle {
       this.child.draw(f);
     }
   }
+
+
+
 
   updateColor(c) {
     this.c = c;
