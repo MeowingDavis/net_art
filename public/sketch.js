@@ -4,15 +4,15 @@ document.body.style.overflow = `hidden`;
 const audio_context = new AudioContext();
 audio_context.suspend();
 
-let vibraphone_buffers = [];
+let acid_buffers = [];
 let current_buffer_index = 0;
 
-get_vibraphone_buffers();
+get_acid_buffers();
 
-function get_vibraphone_buffers() {
-  const filenames = ['vibraphone_note_1.wav', 'vibraphone_note_2.wav', 'vibraphone_note_3.wav', 'vibraphone_note_4.wav', 'vibraphone_note_5.wav'];
+function get_acid_buffers() {
+  const filenames = ['acid_note_1.wav', 'acid_note_2.wav', 'acid_note_3.wav', 'acid_note_4.wav', 'acid_note_5.wav'];
   Promise.all(filenames.map(fetchAndDecode)).then(buffers => {
-    vibraphone_buffers = buffers;
+    acid_buffers = buffers;
   });
 }
 
@@ -28,20 +28,20 @@ function click_handler(mouse_event) {
   if (audio_context.state == 'suspended') {
     audio_context.resume();
   } else {
-    const buffer = vibraphone_buffers[current_buffer_index];
+    const buffer = acid_buffers[current_buffer_index];
     const playback_rate = (mouse_event.clientX / window.innerWidth) * 2 + 0.5;
-    play_vibraphone(buffer, playback_rate, 0.6);
-    current_buffer_index = (current_buffer_index + 1) % vibraphone_buffers.length;
+    play_acid(buffer, playback_rate, 0.6);
+    current_buffer_index = (current_buffer_index + 1) % acid_buffers.length;
   }
 }
 
-function play_vibraphone(buffer, rate) {
+function play_acid(buffer, rate) {
   const buf_node = audio_context.createBufferSource();
   const gainNode = audio_context.createGain(); // add gain node
   buf_node.buffer = buffer;
   buf_node.playbackRate.value = rate;
   buf_node.connect(gainNode); // connect to gain node
-  gainNode.gain.value = 0.1; // set gain value
+  gainNode.gain.value = 0.3; // set gain value
   gainNode.connect(audio_context.destination);
   buf_node.start();
 }
@@ -83,7 +83,7 @@ class RecursiveCircle {
     this.has_child = false;
     this.n_x = random() * 20;
     this.n_y = random() * 20;
-
+    this.x_offset = 0; // initialize x_offset to 0
     if (d > 10) {
       const c = rand_colour();
       this.child = new RecursiveCircle(x, y, d * 0.75, c);
@@ -93,15 +93,13 @@ class RecursiveCircle {
 
   draw(f) {
     fill(this.c);
+    this.x_offset = sin(f / 60) * 20; // update x_offset based on frame count
     const offset = noise(this.n_x + (f / 60), this.n_y) * 60 - 30;
-    ellipse(this.x, this.y, this.d + offset, this.d + offset);
+    ellipse(this.x + this.x_offset, this.y, this.d + offset, this.d + offset); // add x_offset to x position of ellipse
     if (this.has_child) {
       this.child.draw(f);
     }
   }
-
-
-
 
   updateColor(c) {
     this.c = c;
@@ -110,6 +108,7 @@ class RecursiveCircle {
     }
   }
 }
+
 
 
 function rand_colour() {
