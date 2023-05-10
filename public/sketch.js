@@ -6,6 +6,7 @@ audio_context.suspend();
 
 let acid_buffers = [];
 let current_buffer_index = 0;
+// let wave = 0;
 
 get_acid_buffers();
 
@@ -16,10 +17,10 @@ function get_acid_buffers() {
   });
 }
 
-function fetchAndDecode(filename) {
-  return fetch(filename)
-    .then(response => response.arrayBuffer())
-    .then(buffer => audio_context.decodeAudioData(buffer));
+async function fetchAndDecode(filename) {
+  const response = await fetch(filename);
+  const buffer = await response.arrayBuffer();
+  return await audio_context.decodeAudioData(buffer);
 }
 
 document.onclick = click_handler;
@@ -29,8 +30,8 @@ function click_handler(mouse_event) {
     audio_context.resume();
   } else {
     const buffer = acid_buffers[current_buffer_index];
-    const playback_rate = (mouse_event.clientX / window.innerWidth) * 2 + 0.5;
-    play_acid(buffer, playback_rate, 0.6);
+    // const playback_rate = (mouse_event.clientX / windowWidth) * 2 + 0.5;
+    play_acid(buffer,  0.6);
     current_buffer_index = (current_buffer_index + 1) % acid_buffers.length;
   }
 }
@@ -39,7 +40,7 @@ function play_acid(buffer, rate) {
   const buf_node = audio_context.createBufferSource();
   const gainNode = audio_context.createGain(); // add gain node
   buf_node.buffer = buffer;
-  buf_node.playbackRate.value = rate;
+  // buf_node.playbackRate.value = rate;
   buf_node.connect(gainNode); // connect to gain node
   gainNode.gain.value = 0.3; // set gain value
   gainNode.connect(audio_context.destination);
@@ -62,15 +63,16 @@ function setup() {
   });
 
   // add event listener to canvas to randomize color on click
-  canvas.addEventListener('click', () => {
-    circleColor = rand_colour();
-    r.updateColor(circleColor);
-  });
+  // canvas.addEventListener('click', () => {
+  //   circleColor = rand_colour();
+  //   r.updateColor(circleColor);
+  // });
 }
 
 function draw() {
   background(220);
   r.draw(frameCount);
+  // wave = sin(frameCount * 0.1) * 50;
   
 }
 
@@ -113,5 +115,5 @@ class RecursiveCircle {
 
 function rand_colour() {
   const h = random(360);
-  return color(h, 100, 100);
+  return color(h, 100, h);
 }
