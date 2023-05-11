@@ -28,23 +28,25 @@ function setup() {
     const source = audio_context.createBufferSource();
     source.buffer = buffer;
     source.connect(audio_context.destination);
-    source.loop = true; 
     source.start(0);
   });
-  
+
+  // Add an event listener for the "beforeunload" event
+  window.addEventListener("beforeunload", () => {
+    audio_context.close();
+  });
 }
 
 // On each frame, draw the animated graphics
 function draw() {
-
   // If bgToggle is true set background
   if (bgToggle) {
-  background(220);
+    background(220);
   }
-  
+
   // Set the ellipse fill
   noStroke();
-  
+
   //Calculate the diamater of the ellipse
   let diameter = 100 + 50 * noise(angle + 20);
 
@@ -70,18 +72,17 @@ function draw() {
 
 //Recursive function to draw an ellipse
 function recursive_ellipse(x, y, w, h) {
-
   //Draw the ellipse at the current position
   ellipse(x, y, w, h);
-  
+
   // If the size of the ellipse is small enough, return
   if (w < 3 || h < 3) return;
-  
+
   // Recursively call the function on random positions on the screen 
   let newX1 = random(0, width);
   let newY1 = random(0, height);
   recursive_ellipse(newX1, newY1, w / 2, h / 2);
-  
+
   let newX2 = random(0, width);
   let newY2 = random(0, height);
   recursive_ellipse(newX2, newY2, w / 2, h / 2);
@@ -97,8 +98,5 @@ function doubleClicked() {
   if (bgToggle) {
     // Comment out this line to remove background
     background(220);
-  } else {
-    // Uncomment this line to use image as background
-    //background(img);
-  }
+  } 
 }
