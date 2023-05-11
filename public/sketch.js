@@ -1,119 +1,104 @@
-document.body.style.margin = 0;
-document.body.style.overflow = `hidden`;
+//Set angle to zero
+let angle = 0;
 
+//Create an audio context
 const audio_context = new AudioContext();
-audio_context.suspend();
 
-let acid_buffers = [];
-let current_buffer_index = 0;
-// let wave = 0;
+//Set toggle to true
+let bgToggle = true;
 
-get_acid_buffers();
+// Define function to load audio file asynchronously
+const loadAudio = async () => {
+  const response = await fetch("drone.wav");
+  const arrayBuffer = await response.arrayBuffer();
+  const audioBuffer = await audio_context.decodeAudioData(arrayBuffer);
+  return audioBuffer;
+};
 
-function get_acid_buffers() {
-  const filenames = ['acid_note_1.wav', 'acid_note_2.wav', 'acid_note_3.wav', 'acid_note_4.wav', 'acid_note_5.wav'];
-  Promise.all(filenames.map(fetchAndDecode)).then(buffers => {
-    acid_buffers = buffers;
-  });
-}
+// Call the function &get the promise, 
+const audioBufferPromise = loadAudio();
 
-async function fetchAndDecode(filename) {
-  const response = await fetch(filename);
-  const buffer = await response.arrayBuffer();
-  return await audio_context.decodeAudioData(buffer);
-}
-
-document.onclick = click_handler;
-
-function click_handler(mouse_event) {
-  if (audio_context.state == 'suspended') {
-    audio_context.resume();
-  } else {
-    const buffer = acid_buffers[current_buffer_index];
-    // const playback_rate = (mouse_event.clientX / windowWidth) * 2 + 0.5;
-    play_acid(buffer,  0.6);
-    current_buffer_index = (current_buffer_index + 1) % acid_buffers.length;
-  }
-}
-
-function play_acid(buffer, rate) {
-  const buf_node = audio_context.createBufferSource();
-  const gainNode = audio_context.createGain(); // add gain node
-  buf_node.buffer = buffer;
-  // buf_node.playbackRate.value = rate;
-  buf_node.connect(gainNode); // connect to gain node
-  gainNode.gain.value = 0.3; // set gain value
-  gainNode.connect(audio_context.destination);
-  buf_node.start();
-}
-
-let r, circleColor;
-
+// On setup, initialize the canvas
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  colorMode(HSB);
-  circleColor = rand_colour();
-  r = new RecursiveCircle(width/2, height/2, min(width, height), circleColor);
+  createCanvas(innerWidth, innerHeight);
+
+  // Attach an asynchronous click event listener to the canvas
+  canvas.addEventListener("click", async () => {
+    const buffer = await audioBufferPromise;
+    const source = audio_context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audio_context.destination);
+    source.loop = true; 
+    source.start(0);
+  });
+  
+}
+
+// On each frame, draw the animated graphics
+function draw() {
+
+  // If bgToggle is true set background
+  if (bgToggle) {
+  background(220);
+  }
+  
+  // Set the ellipse fill
   noStroke();
   
-  // add event listener to window to call resizeCanvas() on window resize
-  window.addEventListener('resize', () => {
-    resizeCanvas(windowWidth, windowHeight);
-    r = new RecursiveCircle(width/2, height/2, min(width, windowHeight), circleColor);
-  });
+  //Calculate the diamater of the ellipse
+  let diameter = 100 + 50 * noise(angle + 20);
 
-  // add event listener to canvas to randomize color on click
-  // canvas.addEventListener('click', () => {
-  //   circleColor = rand_colour();
-  //   r.updateColor(circleColor);
-  // });
+  // Calculate the ellipse coordinates
+  let x = width/2 + 50 * noise(angle);
+  let y = height/2 + 50 * noise(angle+10);
+
+  // Set ellipse mode to the center
+  ellipseMode(CENTER);
+
+  // Apply color using different wave frequencies
+  let r = 255 * 0.5 * (1 + sin(frameCount * 0.01));
+  let g = 255 * 0.5 * (1 + sin(frameCount * 0.02));
+  let b = 255 * 0.5 * (1 + sin(frameCount * 0.03));
+  fill(r, g, b);
+
+  // Recursively draw the ellipse using smaller size for each iteration
+  recursive_ellipse(x, y, diameter, diameter);
+
+  // Update the angle
+  angle += 0.05;
 }
 
-function draw() {
-  background(220);
-  r.draw(frameCount);
-  // wave = sin(frameCount * 0.1) * 50;
+//Recursive function to draw an ellipse
+function recursive_ellipse(x, y, w, h) {
+
+  //Draw the ellipse at the current position
+  ellipse(x, y, w, h);
   
+  // If the size of the ellipse is small enough, return
+  if (w < 3 || h < 3) return;
+  
+  // Recursively call the function on random positions on the screen 
+  let newX1 = random(0, width);
+  let newY1 = random(0, height);
+  recursive_ellipse(newX1, newY1, w / 2, h / 2);
+  
+  let newX2 = random(0, width);
+  let newY2 = random(0, height);
+  recursive_ellipse(newX2, newY2, w / 2, h / 2);
 }
 
-class RecursiveCircle {
-  constructor(x, y, d, c) {
-    this.x = x;
-    this.y = y;
-    this.d = d;
-    this.c = c;
-    this.has_child = false;
-    this.n_x = random() * 20;
-    this.n_y = random() * 20;
-    this.x_offset = 0; // initialize x_offset to 0
-    if (d > 10) {
-      const c = rand_colour();
-      this.child = new RecursiveCircle(x, y, d * 0.75, c);
-      this.has_child = true;
-    }
-  }
-
-  draw(f) {
-    fill(this.c);
-    this.x_offset = sin(f / 60) * 20; // update x_offset based on frame count
-    const offset = noise(this.n_x + (f / 60), this.n_y) * 60 - 30;
-    ellipse(this.x + this.x_offset, this.y, this.d + offset, this.d + offset); // add x_offset to x position of ellipse
-    if (this.has_child) {
-      this.child.draw(f);
-    }
-  }
-
-  updateColor(c) {
-    this.c = c;
-    if (this.has_child) {
-      this.child.updateColor(rand_colour());
-    }
-  }
+function windowResized() {
+  resizeCanvas(innerWidth, innerHeight);
 }
 
-
-
-function rand_colour() {
-  const h = random(360);
-  return color(h, 100, h);
+//Toggle background on double click
+function doubleClicked() {
+  bgToggle = !bgToggle;
+  if (bgToggle) {
+    // Comment out this line to remove background
+    background(220);
+  } else {
+    // Uncomment this line to use image as background
+    //background(img);
+  }
 }
